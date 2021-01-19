@@ -5,6 +5,9 @@ import store from './store'
 
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
+// 导入vue3.0组件库
+import VueCompositionApi from '@vue/composition-api'
+Vue.use(VueCompositionApi)
 
 Vue.use(ElementUI)
 

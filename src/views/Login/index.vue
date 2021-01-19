@@ -30,7 +30,7 @@
               <el-input v-model="ruleForm.code" size="medium " id="code"></el-input>
             </el-col>
             <el-col :span="8">
-              <el-button type="success" class="login-button" size="medium">验证码</el-button>
+              <el-button type="success" class="login-button" size="medium" @click="getSms">验证码</el-button>
             </el-col>
           </el-row>
         </el-form-item>
@@ -43,14 +43,19 @@
 </template>
 
 <script>
+import { onMounted, reactive } from '@vue/composition-api'
 import { stripscript, validateUsername1, validatePassword1, valdateCode1 } from '@/utils/validate.js'
+import { GetSms } from '@/api/login.js'
 export default {
   name: 'Login',
-  data () {
+  setup (props, { refs }) {
+    /**
+     * 首先声明表单验证中使用到的规则函数
+     */
     // 验证验证码的规则
-    var validateCode = (rule, value, callback) => {
+    const validateCode = (rule, value, callback) => {
       value = stripscript(value)// 将验证的数据改为过滤后的数据
-      this.ruleForm.code = value// 将输入框绑定的数据改为过滤后的数据
+      ruleForm.code = value// 将输入框绑定的数据改为过滤后的数据
       if (value === '') {
         callback(new Error('验证码不能为空'))
       } else if (!valdateCode1(value)) {
@@ -60,7 +65,7 @@ export default {
       }
     }
     // 验证用户名的规则
-    var validateUsername = (rule, value, callback) => {
+    const validateUsername = (rule, value, callback) => {
       if (value === '') {
         callback(new Error('用户名不能为空'))
       } else if (!validateUsername1(value)) {
@@ -70,9 +75,9 @@ export default {
       }
     }
     // 验证密码的规则
-    var validatePassword = (rule, value, callback) => {
+    const validatePassword = (rule, value, callback) => {
       value = stripscript(value)// 将验证的数据改为过滤后的数据
-      this.ruleForm.password = value// 将输入框绑定的数据改为过滤后的数据
+      ruleForm.password = value// 将输入框绑定的数据改为过滤后的数据
       if (value === '') {
         callback(new Error('密码不能为空'))
       } else if (!validatePassword1(value)) {
@@ -82,62 +87,77 @@ export default {
       }
     }
     // 验证重复密码的规则
-    var validatePassword2 = (rule, value, callback) => {
+    const validatePassword2 = (rule, value, callback) => {
       // 因为重复密码门的表单模块使用的是v-show来控制此模块的隐藏与显示（即无论如何重复密码的模块都会渲染，但可能不会展示，即此单元的输入都会有值所以在点击登录时应该忽略次模块的验证）
-      if (this.menu[0].current === true) callback()
+      if (menu[0].current === true) callback()
       value = stripscript(value)
-      this.ruleForm.password2 = value
+      ruleForm.password2 = value
       if (value === '') {
         callback(new Error('确认密码不能为空'))
-      } else if (value !== this.ruleForm.password) {
+      } else if (value !== ruleForm.password) {
         callback(new Error('两次输入的密码不相同'))
       } else {
         callback()
       }
     }
-    // 定义变量
-    return {
-      menu: [
-        { id: '001', name: 'login', current: true, text: '登录' },
-        { id: '002', name: 'regist', current: false, text: '注册' }
+    /**
+     * 定义数据的地方
+     */
+    // 使用reactive定义对象类型的数据
+    const menu = reactive([
+      { id: '001', name: 'login', current: true, text: '登录' },
+      { id: '002', name: 'regist', current: false, text: '注册' }
+    ])
+    // 表单数据
+    const ruleForm = reactive({
+      username: '',
+      password: '',
+      password2: '',
+      code: ''
+    })
+    // 表单验证的规则
+    const rules = reactive({
+      username: [
+        { validator: validateUsername, trigger: 'blur' }
       ],
-      // 表单数据
-      ruleForm: {
-        username: '',
-        password: '',
-        password2: '',
-        code: ''
-      },
-      rules: {
-        username: [
-          { validator: validateUsername, trigger: 'blur' }
-        ],
-        password: [
-          { validator: validatePassword, trigger: 'blur' }
-        ],
-        password2: [
-          { validator: validatePassword2, trigger: 'blur' }
-        ],
-        code: [
-          { validator: validateCode, trigger: 'blur' }
-        ]
-      }
-    }
-  },
-  props: {
-  },
-  methods: {
-    menuClick (index) {
-      this.menu.map((n) => {
+      password: [
+        { validator: validatePassword, trigger: 'blur' }
+      ],
+      password2: [
+        { validator: validatePassword2, trigger: 'blur' }
+      ],
+      code: [
+        { validator: validateCode, trigger: 'blur' }
+      ]
+    })
+    /**
+     * 定义生命周期
+     */
+    // vue3.0的组件挂载完成的钩子函数
+    onMounted(() => {
+      // 打印开发环境下定义的常量
+      // console.log(process.env.VUE_APP_TITLE)
+    })
+    /**
+     * 定义方法
+     */
+    const menuClick = (index) => {
+      menu.map((n) => {
         n.current = false
         // map方法返回的值就直接存入到原来的数组中
         return n
       })
-      this.menu[index].current = true
-    },
+      menu[index].current = true
+    }
+    // 获取验证码接口
+    const getSms = () => {
+      GetSms({ username: ruleForm.username }).then(res => {
+        console.log(res)
+      })
+    }
     // 表单函数
-    submitForm (formName) {
-      this.$refs[formName].validate((valid) => {
+    const submitForm = (formName) => {
+      refs[formName].validate((valid) => {
         if (valid) {
           alert('submit!')
         } else {
@@ -146,13 +166,15 @@ export default {
         }
       })
     }
-  },
-  components: {
-  },
-  computed: {
-  },
-  created () {},
-  mounted () {}
+    return {
+      menu,
+      ruleForm,
+      rules,
+      menuClick,
+      submitForm,
+      getSms
+    }
+  }
 }
 </script>
 
